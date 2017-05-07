@@ -1,4 +1,5 @@
 #include "loadgl.h"
+#include "string.h"
 
 using namespace GL;
 
@@ -6,6 +7,7 @@ using namespace GL;
 
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
+#include <wingdi.h>
 
 static HMODULE lib;
 
@@ -25,9 +27,10 @@ static void free_lib() {
 
 void_func_ptr GL::glGetProcAddress(const char *name) {
 
-	void_func_ptr ptr = (void_func_ptr) wglGetProcAddress(name);
-	if (!ptr)
-		ptr = (void_func_ptr) GetProcAddress(lib, name);
+	//void_func_ptr ptr = (void_func_ptr) wglGetProcAddress(name); ERROR: undefined reference to wglGetProcAddress@4 (?)
+	//if (!ptr)
+		void_func_ptr ptr = (void_func_ptr) GetProcAddress(lib, name);
+
 	return (void_func_ptr) ptr;
 }
 
@@ -37,11 +40,18 @@ void_func_ptr GL::glGetProcAddress(const char *name) {
 #include <GL/glx.h>
 
 static void* lib;
-static PFNGLXGETPROCADDRESSPROC glXGetProcAddress;
+static PFNGLXGETPROCADDRESSPROC glXGetProcAddress_;
 
-static void load_lib() {
+static int load_lib() {
 	lib = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
-	glXGetProcAddress = (PFNGLXGETPROCADDRESSPROC) dlsym(libgl, "glXGetProcAddressARB");
+	if(!lib)
+		return -1;
+
+	glXGetProcAddress_ = (PFNGLXGETPROCADDRESSPROC) dlsym(lib, "glXGetProcAddressARB");
+	if(!glXGetProcAddress_)
+		return -1;
+
+	return 0;
 }
 
 static void free_lib() {
@@ -50,10 +60,10 @@ static void free_lib() {
 
 void_func_ptr GL::glGetProcAddress(const char *name) {
 
-	void_func_ptr ptr = glXGetProcAddress((const GLubyte *) name);
+	void_func_ptr ptr = (void_func_ptr) glXGetProcAddress_((const GLubyte *) name);
 	if (!ptr)
-		ptr = (void_func_ptr) dlsym(libgl, name);
-	return res;
+		ptr = (void_func_ptr) dlsym(lib, name);
+	return ptr;
 }
 #endif
 
