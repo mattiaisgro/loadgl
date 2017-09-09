@@ -80,7 +80,7 @@ bool GL::glIsSupported(const char* extension) {
 
 void load_funcs();
 
-int GL::load() {
+int GL::loadgl() {
 
 	if(load_lib()) return -1;
 
