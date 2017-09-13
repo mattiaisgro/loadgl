@@ -1,5 +1,11 @@
 #include "loadgl.h"
+
+#ifndef LOADGL_MINIMAL
+#include <string>
+#endif
+
 #include "string.h"
+#include "stdlib.h"
 
 using namespace GL;
 
@@ -27,9 +33,9 @@ static void free_lib() {
 
 void_func_ptr GL::glGetProcAddress(const char *name) {
 
-	//void_func_ptr ptr = (void_func_ptr) wglGetProcAddress(name); ERROR: undefined reference to wglGetProcAddress@4 (?)
-	//if (!ptr)
-		void_func_ptr ptr = (void_func_ptr) GetProcAddress(lib, name);
+	void_func_ptr ptr = (void_func_ptr) wglGetProcAddress(name);
+	if (!ptr)
+		ptr = (void_func_ptr) GetProcAddress(lib, name);
 
 	return (void_func_ptr) ptr;
 }
@@ -38,6 +44,7 @@ void_func_ptr GL::glGetProcAddress(const char *name) {
 
 #include <dlfcn.h>
 #include <GL/glx.h>
+#include <string.h>
 
 static void* lib;
 static PFNGLXGETPROCADDRESSPROC glXGetProcAddress_;
@@ -69,13 +76,17 @@ void_func_ptr GL::glGetProcAddress(const char *name) {
 
 bool GL::glIsSupported(const char* extension) {
 
+#ifdef LOADGL_MINIMAL
 	int num;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &num);
 	for(int i = 0; i < num; i++)
-		if(strcmp((const char*) glGetStringi(GL_EXTENSIONS, i), extension))
+		if(!strcmp((const char*) glGetStringi(GL_EXTENSIONS, i), extension))
 			return true;
 
 	return false;
+#else
+	return glextensions.count(std::string(extension));
+#endif
 }
 
 void load_funcs();
@@ -90,6 +101,26 @@ int GL::loadgl() {
 	glGetIntegerv(GL_MINOR_VERSION, &glversion.minor);
 
 	free_lib();
+	return 0;
+}
+
+int GL::loadglext() {
+
+#ifndef LOADGL_MINIMAL
+
+	if(!glGetIntegerv)
+		return -1;
+
+	int num;
+	glGetIntegerv(GL_NUM_EXTENSIONS, &num);
+	for(int i = 0; i < num; i++) {
+		glextensions.insert(std::pair<std::string, bool>(
+			std::string((const char*) glGetStringi(GL_EXTENSIONS, i)),
+			true));
+	}
+
+#endif
+
 	return 0;
 }
 
