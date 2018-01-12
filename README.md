@@ -23,5 +23,8 @@ loadglext();
 std::cout << glIsSupported("ARB_framebuffer_object") << std::endl;
 
 ```
+### C porting
+There is a C version of the library that you can include using the file `loadgl_c.h`.
+
 ### Customization
 You can define the `LOADGL_HEADER` macro to use a different header file (loadgl includes a standard one by default) and `LOADGL_MINIMAL` to use a simpler version of loadgl that doesn't include `std::map`.
